@@ -139,6 +139,12 @@
   if('serviceWorker' in navigator){
     navigator.serviceWorker.addEventListener('message', function(e){
       if(e.data && e.data.type === 'SW_UPDATED'){
+        // If the update requests an auto-reload, perform it immediately
+        if(e.data.autoReload){
+          console.log('SW requested auto-reload to version', e.data.version);
+          setTimeout(()=>location.reload(), 120);
+          return;
+        }
         showBanner(e.data.version);
       }
     });
