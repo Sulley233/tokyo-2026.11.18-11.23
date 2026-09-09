@@ -1,33 +1,37 @@
-// Service Worker（可选）——把本文件放到仓库根目录，与 index.html 同级。
-// 缓存策略：install 时预缓存 index.html；fetch 对导航请求采用网络优先，失败时回退到缓存。
 const CACHE_NAME = 'tokyo-trip-v1';
 const PRECACHE = [
   '/index.html',
   '/'
 ];
 
-// 安装：预缓存页面
 self.addEventListener('install', evt => {
-  evt.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE))
-  );
+  evt.waitUntil((async () => {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      console.log('SW install: caching', PRECACHE);
+      await cache.addAll(PRECACHE);
+      console.log('SW install: cache.addAll succeeded');
+    } catch (err) {
+      console.error('SW install: cache.addAll failed:', err);
+      // Rethrow so install fails and we can see the error in devtools
+      throw err;
+    }
+  })());
   self.skipWaiting();
 });
 
-// 激活：清理旧缓存
 self.addEventListener('activate', evt => {
-  evt.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-    ))
-  );
+  evt.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
+    console.log('SW activate: old caches cleared');
+  })());
   self.clients.claim();
 });
 
-// 请求拦截：导航请求网络优先，失败回退缓存；其他请求网络优先失败回退缓存
 self.addEventListener('fetch', evt => {
   const req = evt.request;
-  if(req.mode === 'navigate' || (req.method === 'GET' && req.headers.get('accept') && req.headers.get('accept').includes('text/html'))){
+  if (req.mode === 'navigate' || (req.method === 'GET' && req.headers.get('accept') && req.headers.get('accept').includes('text/html'))) {
     evt.respondWith(
       fetch(req).then(resp => {
         const copy = resp.clone();
@@ -38,9 +42,6 @@ self.addEventListener('fetch', evt => {
     return;
   }
   evt.respondWith(
-    fetch(req).then(resp => {
-      // 可选：缓存静态资源（不强制）
-      return resp;
-    }).catch(() => caches.match(req))
+    fetch(req).then(resp => resp).catch(() => caches.match(req))
   );
 });
