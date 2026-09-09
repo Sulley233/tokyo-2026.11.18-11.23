@@ -1,6 +1,6 @@
 // Cache versioning and client notification
 const CACHE_PREFIX = 'tokyo-trip-';
-const CACHE_VERSION = 'v66'; // bumped to v66 for release
+const CACHE_VERSION = 'v67'; // bumped to v67 for release (auto-reload UX)
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const PRECACHE = [
   '/index.html',
@@ -32,7 +32,7 @@ self.addEventListener('activate', evt => {
     // Notify clients that a new version is active
     const clients = await self.clients.matchAll({type: 'window'});
     for (const client of clients) {
-      client.postMessage({type: 'SW_UPDATED', version: CACHE_VERSION});
+      client.postMessage({type: 'SW_UPDATED', version: CACHE_VERSION, autoReload: true});
     }
   })());
   self.clients.claim();
