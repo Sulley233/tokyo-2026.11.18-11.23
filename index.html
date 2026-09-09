@@ -1,157 +1,243 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F6F3ED">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>东京 6 日行程 · 11.18 - 11.23</title>
-<style>
-  :root{
-    --bg:#F6F3ED;
-    --bg-deep:#ECE7DE;
-    --card:#FFFFFF;
-    --ink:#2D2A26;
-    --ink2:#8B8478;
-    --ink3:#B5ADA0;
-    --line:#ECE6DB;
-    --red:#C2433D;
-    --red-deep:#A93A34;
-    --red-soft:#FAEDEB;
-    --radius:16px;
-    --shadow:0 1px 2px rgba(45,42,38,.04), 0 6px 18px rgba(45,42,38,.07);
-    --serif:"Songti SC","STSong","Noto Serif SC","Hiragino Mincho ProN","SimSun",serif;
-  }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html{-webkit-text-size-adjust:100%}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-    background:var(--bg-deep);
-    color:var(--ink);
-    font-size:15px;
-    line-height:1.5;
-  }
-  button{font-family:inherit;cursor:pointer}
-  input,textarea,select{font-family:inherit}
-  *{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
-  .emo, .tl-dot, .h-meta, .tip .emo, .bb-btn .emo{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Noto Emoji",sans-serif}
+/* Injected prototype: render schedule, countdown, SVG overview, and interactions
+   Uses DEFAULT_DATA embedded in index.html (partial provided by user).
+   Adds: - Top countdown with timezone-aware display
+         - SVG hand-drawn style overview (placeholder paths)
+         - Per-day timeline rendering
+         - Google Maps & Xiaohongshu links for places
+         - To-do list rendering with localStorage-based check state
+*/
 
-  #app{
-    max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;
-    background:var(--bg);box-shadow:0 0 44px rgba(45,42,38,.12);
-    position:relative;padding-bottom:calc(120px + env(safe-area-inset-bottom));
+(function(){
+  // Attempt to read DEFAULT_DATA from the page (user provided it inline earlier)
+  try{
+    if(typeof DEFAULT_DATA === 'undefined' || !DEFAULT_DATA) return console.log('No DEFAULT_DATA present for prototype injection');
+  }catch(e){return}
+
+  const L = window.location;
+
+  // Utility: format a Date object into local string with timezone short
+  function fmtLocal(dt){
+    try{
+      return new Intl.DateTimeFormat(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(dt);
+    }catch(e){
+      return dt.toString();
+    }
   }
 
-  /* ---------- Header ---------- */
-  header{
-    padding:calc(22px + env(safe-area-inset-top)) 20px 16px;
-    background:linear-gradient(180deg,#FAF7F1 0%,var(--bg) 100%);
-    position:relative;
-  }
-  .h-eyebrow{font-size:11px;letter-spacing:4px;color:var(--red);font-weight:700}
-  h1{font-family:var(--serif);font-size:27px;font-weight:700;margin-top:6px;letter-spacing:2px}
-  .h-meta{margin-top:10px;font-size:12.5px;color:var(--ink2);display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-  .pill{background:var(--red-soft);color:var(--red);border-radius:99px;padding:2px 10px;font-weight:600;font-size:12px}
-  .stamp{
-    position:absolute;right:20px;top:calc(26px + env(safe-area-inset-top));
-    width:46px;height:46px;background:var(--red);color:#fff;
-    font-family:var(--serif);display:flex;align-items:center;justify-content:center;
-    font-size:24px;border-radius:6px;transform:rotate(6deg);
-    box-shadow:0 4px 10px rgba(194,67,61,.35);
-  }
-  .stamp::after{content:'';position:absolute;inset:3px;border:1.5px solid rgba(255,255,255,.7);border-radius:4px}
-
-  /* ... existing styles omitted for brevity in this view (full original styles remain) ... */
-
-  /* SW update banner styles */
-  .sw-update-banner{
-    position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:9999;
-    background:linear-gradient(180deg,#fff,#fff);border-radius:12px;padding:10px 14px;box-shadow:0 6px 18px rgba(0,0,0,.12);
-    display:flex;gap:10px;align-items:center;font-size:14px;color:var(--ink);border:1px solid var(--line);min-width:280px;max-width:92%;
-    opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;
-  }
-  .sw-update-banner.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);} 
-  .sw-update-banner .sw-msg{flex:1}
-  .sw-update-banner .sw-actions{display:flex;gap:8px}
-  .sw-update-banner .btn{padding:8px 12px;border-radius:9px;border:none;background:#FBFAF7;color:var(--ink2)}
-  .sw-update-banner .btn.primary{background:linear-gradient(135deg,#D0544D,var(--red-deep));color:#fff}
-
-</style>
-</head>
-<body>
-<div id="app">
-  <header>
-    <div class="h-eyebrow">TOKYO · 旅のしおり</div>
-    <h1>东京 6 日行程</h1>
-    <div class="h-meta">
-      <span class="pill">11.18 — 11.23</span>
-      <span>🍁 红叶银杏季</span>
-      <span>🌡 8 ~ 16°C</span>
-      <span>✈️ 香港航空往返</span>
-    </div>
-    <div class="stamp">旅</div>
-  </header>
-
-  <!-- rest of your original page content remains unchanged -->
-
-</div>
-
-<!-- Non-blocking SW update banner (hidden by default) -->
-<div id="swUpdateBanner" class="sw-update-banner" role="status" aria-hidden="true">
-  <div class="sw-msg">站点有新版本可用</div>
-  <div class="sw-actions">
-    <button id="swUpdateLater" class="btn">稍后</button>
-    <button id="swUpdateReload" class="btn primary">刷新</button>
-  </div>
-</div>
-
-<script>
-/* existing page scripts (countdown, registration, etc.) remain above or below — ensure sw registration still runs */
-
-// Listen for messages from the service worker and show a non-blocking banner
-(function installSWUpdateBanner(){
-  const banner = document.getElementById('swUpdateBanner');
-  const msgEl = banner && banner.querySelector('.sw-msg');
-  const btnLater = document.getElementById('swUpdateLater');
-  const btnReload = document.getElementById('swUpdateReload');
-
-  function showBanner(version){
-    if(!banner) return;
-    if(msgEl) msgEl.textContent = '站点有新版本可用（' + (version || '') + '）';
-    banner.classList.add('show');
-    banner.setAttribute('aria-hidden','false');
-  }
-  function hideBanner(){
-    if(!banner) return;
-    banner.classList.remove('show');
-    banner.setAttribute('aria-hidden','true');
-  }
-
-  if(btnLater) btnLater.addEventListener('click', hideBanner);
-  if(btnReload) btnReload.addEventListener('click', function(){
-    // perform a reload so the new service worker / cache takes effect
-    hideBanner();
-    location.reload();
-  });
-
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.addEventListener('message', function(e){
-      if(e.data && e.data.type === 'SW_UPDATED'){
-        // If the update requests an auto-reload, perform it immediately
-        if(e.data.autoReload){
-          console.log('SW requested auto-reload to version', e.data.version);
-          setTimeout(()=>location.reload(), 120);
-          return;
+  // ---------- Top countdown: find next upcoming event from DEFAULT_DATA
+  function nextEvent(){
+    // scan todos -> but better to scan per-day events if present; fallback to todos
+    var candidates = [];
+    // try days (if exists)
+    if(DEFAULT_DATA.days && Array.isArray(DEFAULT_DATA.days)){
+      DEFAULT_DATA.days.forEach((d,di)=>{
+        if(d.items && Array.isArray(d.items)){
+          d.items.forEach(it=>{
+            if(it.time){
+              // assume ISO-like; try Date parse
+              const dt = new Date(it.time);
+              if(!isNaN(dt)) candidates.push({dt, title:it.title||it.name||it.text||'活动', obj:it});
+            }
+          })
         }
-        showBanner(e.data.version);
-      }
-    });
-  }
-})();
+      })
+    }
+    // fallback todos with tags that include date-like substring (best-effort)
+    if(candidates.length===0 && DEFAULT_DATA.todos){
+      DEFAULT_DATA.todos.forEach(t=>{
+        // naive: look for yyyy or mm.dd pattern — user provided times likely not here; skip
+      })
+    }
 
-/* Keep rest of original scripts (countdown, register SW, etc.) — they were preserved in the file. */
-</script>
-</body>
-</html>
+    candidates.sort((a,b)=>a.dt - b.dt);
+    return candidates.length?candidates[0]:null;
+  }
+
+  function renderCountdown(){
+    const card = document.getElementById('countdownCard');
+    if(!card) return;
+    const row = card.querySelector('#countdownRow');
+    // prefer nextEvent
+    const ev = nextEvent();
+    const labelEl = card.querySelector('.cd-title');
+    const subEl = card.querySelector('.cd-sub');
+
+    // if no event found, fallback to first todo urgent
+    let targetDate = null; let label = '';
+    if(ev){ targetDate = ev.dt; label = ev.title; }
+    else if(DEFAULT_DATA.todos && DEFAULT_DATA.todos.length){ label = DEFAULT_DATA.todos[0].text; }
+    else { label = '无近期事件'; }
+
+    if(labelEl) labelEl.textContent = label;
+    if(subEl){
+      if(targetDate) subEl.textContent = fmtLocal(targetDate);
+      else subEl.textContent = '';
+    }
+
+    if(!targetDate){ row.innerHTML = '<span class="cd-gone">无可计算的倒计时目标</span>'; return }
+
+    function tick(){
+      const now = Date.now();
+      const diff = targetDate.getTime() - now;
+      if(diff<=0){ row.innerHTML = '<span class="cd-gone">✈️ 已开始 / 已过时</span>'; return }
+      const d = Math.floor(diff/86400000);
+      const h = Math.floor((diff%86400000)/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      const s = Math.floor((diff%60000)/1000);
+      if(d>0){
+        row.innerHTML = '<span class="cd-num">'+d+'</span><span class="cd-unit">天</span> ' +
+                        '<span class="cd-num">'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'</span>'+
+                        '<span class="cd-suffix">后</span>';
+      }else{
+        row.innerHTML = '<span class="cd-num">'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'</span>'+
+                        '<span class="cd-suffix">后出发</span>';
+      }
+    }
+    tick();
+    setInterval(tick,1000);
+  }
+
+  // ---------- SVG overview (hand-drawn placeholder) ----------
+  function renderSVGOverview(){
+    const ov = document.getElementById('ov');
+    if(!ov) return;
+    // container
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const w = 440, h = 160;
+    const svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute('viewBox','0 0 '+w+' '+h);
+    svg.style.width='100%';svg.style.height='160px';svg.style.display='block';
+    // background paper
+    const bg = document.createElementNS(svgNS,'rect'); bg.setAttribute('x',0);bg.setAttribute('y',0);bg.setAttribute('width',w);bg.setAttribute('height',h);bg.setAttribute('fill','#FFF8F5');bg.setAttribute('rx',12);
+    svg.appendChild(bg);
+
+    // generate placeholder points from days
+    const days = DEFAULT_DATA.days && DEFAULT_DATA.days.length?DEFAULT_DATA.days.length:6;
+    const colors = ['#C75B54','#D89A3D','#4E7FB2','#C07B4A','#B57BB0','#6C6CBB'];
+    const points = [];
+    for(let i=0;i<days;i++){
+      const x = 30 + i*(w-60)/(days-1||1);
+      const y = 40 + (i%2?50:20);
+      points.push({x,y});
+    }
+
+    // draw rough paths per day (single polyline for demo)
+    for(let i=0;i<points.length;i++){
+      const p = points[i];
+      const c = colors[i%colors.length];
+      const circle = document.createElementNS(svgNS,'circle');
+      circle.setAttribute('cx',p.x);circle.setAttribute('cy',p.y);circle.setAttribute('r',8);circle.setAttribute('fill',c);circle.setAttribute('opacity',.95);
+      svg.appendChild(circle);
+      const label = document.createElementNS(svgNS,'text');label.setAttribute('x',p.x+12);label.setAttribute('y',p.y+4);label.setAttribute('font-size',12);label.setAttribute('fill','#6A5D58');label.textContent='Day '+(i+1);
+      svg.appendChild(label);
+      // draw line to next
+      if(i<points.length-1){
+        const n = points[i+1];
+        const path = document.createElementNS(svgNS,'path');
+        const d = 'M'+p.x+','+p.y+' Q '+((p.x+n.x)/2)+','+(p.y-20)+' '+n.x+','+n.y;
+        path.setAttribute('d',d);path.setAttribute('stroke',colors[i%colors.length]);path.setAttribute('stroke-width',3);path.setAttribute('fill','none');path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');path.setAttribute('opacity',.9);
+        svg.appendChild(path);
+      }
+    }
+
+    // caption and append
+    const caption = document.createElement('div');caption.style.fontSize='12px';caption.style.color='var(--ink2)';caption.style.marginTop='8px';caption.textContent='行程总览（手绘示意） — 点击卡片查看当日详细地图';
+    ov.innerHTML='';ov.appendChild(svg);ov.appendChild(caption);
+  }
+
+  // ---------- Render todos list (pure list, local check state) ----------
+  function renderTodos(){
+    const el = document.getElementById('todoCard');
+    if(!el) return;
+    const body = el.querySelector('#todoBody');
+    el.style.display='block';
+    const todos = Array.isArray(DEFAULT_DATA.todos)?DEFAULT_DATA.todos:[];
+    const doneKey = 'trip_todos_done_v'+(DEFAULT_DATA.version||0);
+    let doneState = {};
+    try{ doneState = JSON.parse(localStorage.getItem(doneKey) || '{}'); }catch(e){doneState={}};
+    body.innerHTML='';
+    if(todos.length===0){ body.innerHTML = '<div class="todo-empty">无待办</div>'; return }
+
+    todos.forEach(t=>{
+      const item = document.createElement('div'); item.className='todo-item'+(doneState[t.id]?' is-done':'');
+      const chk = document.createElement('button'); chk.className='todo-check'; chk.setAttribute('aria-label','完成');
+      chk.addEventListener('click', function(){
+        // toggle local state only
+        doneState[t.id] = !doneState[t.id];
+        localStorage.setItem(doneKey, JSON.stringify(doneState));
+        renderTodos();
+      });
+      const main = document.createElement('div'); main.className='todo-main';
+      const text = document.createElement('div'); text.className='todo-text'; text.textContent = t.text;
+      const tag = document.createElement('div'); tag.className='todo-tag'; tag.textContent = t.tag || '';
+      main.appendChild(text); main.appendChild(tag);
+      if(t.urgent){
+        const urg = document.createElement('div'); urg.className='todo-urgent'; urg.textContent='紧急'; urg.style.marginLeft='8px';
+        main.insertBefore(urg, main.firstChild);
+      }
+      item.appendChild(chk); item.appendChild(main);
+      body.appendChild(item);
+    });
+    // update counts
+    const total = todos.length; const done = Object.keys(doneState).filter(k=>doneState[k]).length;
+    el.querySelector('#todoNum').textContent = done + ' / ' + total;
+    const pct = Math.round((done/total)*100);
+    el.querySelector('#todoBar i').style.width = pct+'%';
+  }
+
+  // ---------- Render timeline from DEFAULT_DATA.days (if present) ----------
+  function renderTimeline(){
+    const container = document.getElementById('tl'); if(!container) return;
+    container.innerHTML='';
+    const days = DEFAULT_DATA.days || [];
+    // if no days, try to synthesize from todos
+    if(days.length===0){
+      const placeholder = document.createElement('div'); placeholder.className='tl-end'; placeholder.textContent='暂无逐日行程（请导入或编辑）'; container.appendChild(placeholder); return
+    }
+    days.forEach((d,di)=>{
+      const dayHeader = document.createElement('div'); dayHeader.className='overview'; dayHeader.style.marginTop='10px'; dayHeader.innerHTML = '<div class="ov-top"><div><div class="ov-day">Day '+(di+1)+'</div><div class="ov-theme">'+(d.theme||('Day '+(di+1)))+'</div></div><div class="ov-edit">编辑</div></div>';
+      container.appendChild(dayHeader);
+      if(d.items && d.items.length){
+        d.items.forEach(it=>{
+          const row = document.createElement('div'); row.className='tl-row';
+          const time = document.createElement('div'); time.className='tl-time'; time.textContent = it.time? (new Date(it.time)).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+          const rail = document.createElement('div'); rail.className='tl-rail'; rail.innerHTML = '<div class="tl-dot">●</div>';
+          const card = document.createElement('div'); card.className='tl-card';
+          const top = document.createElement('div'); top.className='tl-top';
+          const info = document.createElement('div'); info.className='tl-info';
+          const title = document.createElement('div'); title.className='tl-title'; title.textContent = it.title || it.name || it.text || '活动';
+          const loc = document.createElement('div'); loc.className='tl-loc'; loc.textContent = it.loc || it.place || '';
+          if(it.needBooking) { const b = document.createElement('span'); b.textContent='需预约'; b.style.color='var(--red)'; b.style.marginLeft='8px'; title.appendChild(b); }
+          info.appendChild(title); info.appendChild(loc);
+
+          // actions: google maps + xiaohongshu
+          const acts = document.createElement('div'); acts.className='tl-acts';
+          const gbtn = document.createElement('button'); gbtn.className='mini-btn'; gbtn.textContent='导航';
+          gbtn.addEventListener('click', ()=>{
+            const q = encodeURIComponent(it.geo || it.loc || it.title || '');
+            const url = 'https://www.google.com/maps/dir/?api=1&destination='+q+'&travelmode=driving';
+            window.open(url,'_blank');
+          });
+          const xbtn = document.createElement('button'); xbtn.className='mini-btn'; xbtn.textContent='📕 小红书';
+          xbtn.addEventListener('click', ()=>{
+            const q = encodeURIComponent(it.title || it.loc || it.name || '');
+            const url = 'https://www.xiaohongshu.com/search/result?keyword='+q;
+            window.open(url,'_blank');
+          });
+          acts.appendChild(gbtn); acts.appendChild(xbtn);
+
+          top.appendChild(info); top.appendChild(acts);
+          card.appendChild(top);
+          if(it.note){ const note = document.createElement('div'); note.className='tl-note'; note.textContent = it.note; card.appendChild(note); }
+
+          row.appendChild(time); row.appendChild(rail); row.appendChild(card);
+          container.appendChild(row);
+        })
+      }
+    })
+  }
+
+  // ---------- Init render
+  renderCountdown(); renderSVGOverview(); renderTodos(); renderTimeline();
+
+})();
