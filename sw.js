@@ -1,6 +1,6 @@
 // Cache versioning and client notification
 const CACHE_PREFIX = 'tokyo-trip-';
-const CACHE_VERSION = 'v1'; // bump this to 'v2' on new releases
+const CACHE_VERSION = 'v2'; // bumped to v2 for release
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const PRECACHE = [
   '/index.html',
